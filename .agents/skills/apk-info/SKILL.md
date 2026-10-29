@@ -1,6 +1,6 @@
 ---
 name: apk-info
-description: Parses and inspects Android APK/XAPK/APKM files, extracting package name, version, SDK levels, main activity, permissions, manifest components (activities, services, receivers, providers), signing certificates (v1/v2/v3/v3.1, source stamps, channel blocks), the decoded AndroidManifest.xml, and apktool-style resources. Ships as a CLI and a Python library; a faster, malware-robust alternative to androguard (handles BadPack and tampered zip headers). Use when analyzing or inspecting an APK/XAPK/APKM, when unzip/7z fail or drop the manifest on an APK (BadPack, unsupported compression, empty manifest), when a .zip is actually an APK, when decoding resources/manifest, or when extracting APK metadata/files programmatically. Read-only analysis - does not build, sign, modify, or decompile APKs.
+description: Parses and inspects Android APK/XAPK/APKM/APKS files, extracting package name, version, SDK levels, main activity, permissions, manifest components (activities, services, receivers, providers), signing certificates (v1/v2/v3/v3.1, source stamps, channel blocks), the decoded AndroidManifest.xml, and apktool-style resources. Ships as a CLI and a Python library; a faster, malware-robust alternative to androguard (handles BadPack and tampered zip headers). Use when analyzing or inspecting an APK/XAPK/APKM/APKS, when unzip/7z fail or drop the manifest on an APK (BadPack, unsupported compression, empty manifest), when a .zip is actually an APK, when decoding resources/manifest, or when extracting APK metadata/files programmatically. Read-only analysis - does not build, sign, modify, or decompile APKs.
 license: Apache-2.0
 metadata:
   author: delvinru
@@ -9,7 +9,7 @@ metadata:
 
 # apk-info
 
-`apk-info` is a fast, malware-friendly, **read-only** APK parser. It extracts information from APK/XAPK/APKM files: package name, version, SDK requirements, main activity, permissions, signatures, manifest components, and individual files. It ships as a CLI (`apk-info`) and a Python library (`apk-info` on PyPI, ≥3.10, with full type stubs).
+`apk-info` is a fast, malware-friendly, **read-only** APK parser. It extracts information from APK/XAPK/APKM/APKS files: package name, version, SDK requirements, main activity, permissions, signatures, manifest components, and individual files. It ships as a CLI (`apk-info`) and a Python library (`apk-info` on PyPI, ≥3.10, with full type stubs).
 
 Its key strength is robustness against malformed/malicious inputs (BadPack technique, tampered zip headers, garbage AXML chunks, corrupt `resources.arsc`) where standard parsers like androguard fail or are ~10× slower. A deliberately broken resource table never aborts parsing — the manifest, DEX and signatures are still analyzed.
 
@@ -41,7 +41,7 @@ uv pip install apk-info
 apk-info show ./app.apk
 
 # Include signature/certificate details
-apk-info show --sigs ./app.apk
+apk-info show --signatures ./app.apk
 
 # Machine-readable output (one JSON object per APK) — pipe to jq
 apk-info show --json ./app.apk | jq .package_name
@@ -59,7 +59,7 @@ apk-info extract ./app.apk                 # → ./app.apk.unp/
 apk-info extract ./app.apk -f 'classes\d+\.dex' -f 'AndroidManifest.xml'
 
 # Decode resources apktool-style (manifest + res/values* + res/<type>-<cfg>)
-# merges base + every config split for XAPK/APKM containers
+# merges base + every config split for XAPK/APKM/APKS containers
 apk-info extract ./app.apk -r
 
 # Repair a BadPack-damaged APK so unzip/7z can open it (output is unsigned)
@@ -109,7 +109,7 @@ for sig in apk.get_signatures():
 | Main (launchable) activity                    | `show`        | `get_main_activity()` / `get_main_activities()`                                |
 | Application label                             | `show`        | `get_application_label()`                                                      |
 | Supported ABIs (native libs)                  | `show`        | `get_supported_abis()`                                                         |
-| Signatures & certificates                     | `show --sigs` | `get_signatures()`                                                             |
+| Signatures & certificates                     | `show --signatures` | `get_signatures()`                                                             |
 | Permissions                                   | —             | `get_permissions()`                                                            |
 | Declared permissions                          | —             | `get_declared_permissions()`                                                   |
 | Features (device capabilities)                | —             | `get_features()`                                                               |
@@ -128,6 +128,7 @@ for sig in apk.get_signatures():
 - **APK** — standard Android packages.
 - **XAPK** — APK containers with a `manifest.json` (the inner `<package_name>.apk` is parsed).
 - **APKM** — APKM bundles (the inner `base.apk` is parsed).
+- **APKS** — `bundletool build-apks` output with a `toc.pb` (the inner `splits/base-master.apk`, `universal.apk` or first standalone APK is parsed).
 
 Format is auto-detected — just point `APK(path)` or `apk-info show <path>` at any of them.
 
